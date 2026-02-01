@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teacher Marking: Y9 Video Editing Adverts</title>
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <div class="brand">
+      <span class="brand__dot" aria-hidden="true"></span>
+      <span class="brand__title">Teacher</span>
+      <span class="brand__tag">Y9 Video Adverts</span>
+    </div>
+
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a class="nav__link" href="index.html">Student page</a>
+      <a class="nav__link" href="#dashboard">Dashboard</a>
+      <a class="nav__link nav__cta" href="#rubric">Rubric</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero hero--compact hero--textonly">
+    <div class="hero__copy">
+      <h1>Teacher marking dashboard</h1>
+      <p class="lead">View submissions, preview Canva links, add marks and feedback.</p>
+      <p class="muted small">Security note: protect your Firestore rules. This page is just a front-end.</p>
+    </div>
+  </section>
+
+  <section class="grid" id="dashboard">
+    <article class="card">
+      <h2>Sign in</h2>
+
+      <div class="auth" id="authBox">
+        <p class="muted">Sign in with a teacher account to view and mark submissions.</p>
+
+        <div class="auth__grid">
+          <div>
+            <label class="label" for="email">Email</label>
+            <input class="input" id="email" type="email" autocomplete="email" />
+          </div>
+          <div>
+            <label class="label" for="password">Password</label>
+            <input class="input" id="password" type="password" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="auth__actions">
+          <button class="btn btn--primary" id="btnLogin">Sign in</button>
+          <button class="btn btn--ghost" id="btnReset">Forgot password</button>
+        </div>
+
+        <div class="status" id="status" aria-live="polite"></div>
+      </div>
+
+      <div class="signedin hidden" id="signedInBox">
+        <div class="signedin__row">
+          <p class="muted">Signed in as <strong id="whoami"></strong></p>
+          <button class="btn btn--ghost" id="btnLogout">Sign out</button>
+        </div>
+
+        <div class="filters">
+          <div>
+            <label class="label" for="filterClass">Filter by class</label>
+            <select class="select" id="filterClass">
+              <option value="">All classes</option>
+              <option>9A1</option><option>9A2</option><option>9A3</option><option>9B1</option><option>9B2</option><option>9B3</option><option>9B4</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="filterMarked">Filter by marking</label>
+            <select class="select" id="filterMarked">
+              <option value="">All</option>
+              <option value="unmarked">Unmarked</option>
+              <option value="marked">Marked</option>
+            </select>
+          </div>
+          <div class="filters__actions">
+            <button class="btn" id="btnExportCsv" type="button">Export CSV</button>
+            <button class="btn" id="btnRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div id="submissions" class="submissions"></div>
+      </div>
+    </article>
+
+    <article class="card" id="rubric">
+      <h2>Quick rubric (20 marks)</h2>
+      <ul class="list">
+        <li><strong>Branding (0–4):</strong> brand name/logo, consistent style.</li>
+        <li><strong>Product focus (0–4):</strong> clear product + key selling point(s).</li>
+        <li><strong>Persuasion (0–4):</strong> message, tone, call to action.</li>
+        <li><strong>Editing & pacing (0–4):</strong> timing, readability, transitions used well.</li>
+        <li><strong>Audio & finish (0–4):</strong> audio choices, polish, correct length (20–30s).</li>
+      </ul>
+      <p class="muted small">You can adjust the marking bands in downloads/y9-video-marking-rubric.txt.</p>
+    </article>
+  </section>
+
+    <!-- Preview modal -->
+  <div class="modal hidden" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+    <div class="modal__backdrop" data-close="true"></div>
+
+    <div class="modal__panel" role="document">
+      <div class="modal__header">
+        <div>
+          <h2 id="previewTitle" style="margin:0;">Preview</h2>
+          <p class="muted small" id="previewMeta" style="margin:6px 0 0 0;"></p>
+        </div>
+        <button class="btn btn--ghost" id="closePreview" type="button">Close</button>
+      </div>
+
+      <div class="modal__body">
+        <p class="muted small" style="margin:0 0 10px 0;">If the preview is blank, the student’s share permissions may be locked. Use “Open in new tab” and ask the student to set: <strong>Anyone with the link can view</strong>.</p>
+
+        <div class="preview__framewrap preview__framewrap--big">
+          <iframe id="previewFrame" title="Canva preview" loading="lazy" referrerpolicy="no-referrer"></iframe>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <a class="btn btn--secondary" id="openNewTab" target="_blank" rel="noopener">Open in new tab</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  <footer class="footer">
+    <p>
+      KS3 Computing — Teacher dashboard for Y9 video adverts.
+      <span class="muted">If a link is blocked, ask the student to change share permissions.</span>
+    </p>
+  </footer>
+
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // TODO: Replace with your Firebase project config (must match index.html)
+  const firebaseConfig = {
+  apiKey: "AIzaSyASpYyUybVbgqSuY3u_f16yhTurgQQPZjs",
+  authDomain: "y9-canva-submissions.firebaseapp.com",
+  projectId: "y9-canva-submissions",
+  storageBucket: "y9-canva-submissions.firebasestorage.app",
+  messagingSenderId: "916862767539",
+  appId: "1:916862767539:web:178bb913ed6091108f7bc6"
+};
+
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window.firebaseApp = app;
+  window.auth = auth;
+  window.db = db;
+  window._authHelpers = { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail };
+</script>
+
+<script defer src="teacher.js"></script>
+</body>
+</html>
